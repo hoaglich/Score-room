@@ -1,0 +1,8 @@
+{
+  "name": "score-room",
+  "version": "1.0.0",
+  "description": "Tính điểm chơi bài ngoài đời, dữ liệu lưu trên máy chủ phòng",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}

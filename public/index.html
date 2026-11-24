@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tính điểm chơi bài</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+
+  <!-- 1. Nhập tên -->
+  <section id="s-name" class="hidden">
+    <h1>Tính điểm chơi bài</h1>
+    <p class="sub">Ghi điểm khi chơi bài ngoài đời. Nhập tên để bắt đầu.</p>
+    <div class="card">
+      <label for="nameInput">Tên của bạn</label>
+      <input id="nameInput" maxlength="16" placeholder="Ví dụ: Lịch" autocomplete="off">
+    </div>
+    <button class="primary" id="nameOk">Tiếp tục</button>
+  </section>
+
+  <!-- 2. Trang chính -->
+  <section id="s-home" class="hidden">
+    <h1>Xin chào, <span id="hiName"></span></h1>
+    <p class="sub"><span id="netStatus">Đang kết nối…</span> · <a href="#" id="changeName" style="color:var(--muted)">Đổi tên</a></p>
+    <div class="stack">
+      <button class="primary" id="goCreate">Tạo phòng chơi</button>
+      <button id="goFind">Tìm phòng</button>
+    </div>
+    <div class="card hidden" id="recentCard" style="margin-top:18px">
+      <h2>Phòng đã tham gia gần đây</h2>
+      <div id="recentList"></div>
+    </div>
+  </section>
+
+  <!-- 3. Tạo phòng -->
+  <section id="s-create" class="hidden">
+    <h1>Tạo phòng</h1>
+    <p class="sub">Dữ liệu phòng được lưu trên máy chủ nên mọi người không cần online liên tục. Máy của bạn cũng giữ một bản sao lưu.</p>
+    <div class="card">
+      <label for="cGame">Bộ môn tính điểm</label>
+      <select id="cGame"></select>
+      <div class="muted" id="cHint" style="margin-top:6px"></div>
+      <label for="cMax">Số người tham gia</label>
+      <select id="cMax"></select>
+      <label for="cName">Tên phòng (không bắt buộc)</label>
+      <input id="cName" maxlength="30" placeholder="Ví dụ: Tối thứ bảy" autocomplete="off">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--text)">
+        <input type="checkbox" id="cListed" checked style="width:auto"> Hiện trong danh sách phòng gần đây
+      </label>
+    </div>
+    <div class="stack">
+      <button class="primary" id="createOk">Tạo phòng</button>
+      <button id="createBack">Quay lại</button>
+    </div>
+  </section>
+
+  <!-- 4. Tìm phòng -->
+  <section id="s-find" class="hidden">
+    <h1>Tìm phòng</h1>
+    <p class="sub">Các phòng đang mở trong cùng mạng với bạn.</p>
+    <div class="card"><div id="roomList"></div></div>
+    <div class="card">
+      <label for="codeInput">Hoặc nhập mã phòng</label>
+      <div class="grid2">
+        <input id="codeInput" maxlength="8" placeholder="Ví dụ: K7M2" autocomplete="off" style="text-transform:uppercase">
+        <button class="primary small" id="codeGo">Vào</button>
+      </div>
+    </div>
+    <button id="findBack">Quay lại</button>
+  </section>
+
+  <!-- Chờ duyệt / đang mở lại phòng -->
+  <section id="s-wait" class="hidden">
+    <h1 id="waitTitle">Đang chờ duyệt</h1>
+    <p class="sub" id="waitSub">Phòng đã bắt đầu. Cần tất cả mọi người trong phòng chấp nhận thì bạn mới vào được.</p>
+    <button id="waitCancel">Huỷ</button>
+  </section>
+
+  <!-- 5. Phòng: khung chung. Phần riêng của từng trò do games/<trò>/ui.js vẽ vào #gameRoot -->
+  <section id="s-room" class="hidden">
+    <h1 id="rTitle"></h1>
+    <p class="sub" id="rSub"></p>
+
+    <div class="card" id="codeCard">
+      <div class="muted">Mã phòng, người khác nhập mã hoặc tìm phòng để vào</div>
+      <div class="code" id="rCode"></div>
+    </div>
+
+    <div class="card hidden" id="joinCard">
+      <h2>Người xin vào phòng</h2>
+      <div id="joinReqs"></div>
+    </div>
+
+    <div class="card hidden" id="waitCard">
+      <h2>Người trong phòng (<span id="waitCount"></span>)</h2>
+      <div id="waitList"></div>
+      <div class="muted" id="waitMsg" style="margin:10px 0"></div>
+      <button class="primary hidden" id="startBtn">Bắt đầu</button>
+    </div>
+
+    <div id="gameRoot"></div>
+
+    <div class="stack">
+      <button id="lockBtn" class="hidden"></button>
+      <button class="danger" id="leaveBtn">Thoát phòng (điểm vẫn được lưu)</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- Popup khi mất kết nối -->
+<div id="reconnModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Mất kết nối</h2>
+    <p class="muted" id="reconnMsg" style="margin:0 0 14px"></p>
+    <div class="stack">
+      <button class="primary" id="reconnBtn">Kết nối lại</button>
+      <button id="reconnLeave">Thoát phòng</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Nơi các trò đăng ký giao diện của mình: games/<trò>/ui.js gọi Games.register('<trò>', {...})
+window.Games = {
+  registry: {},
+  register(id, ui) { this.registry[id] = ui; },
+};
+</script>
+<script src="/games/_shared/rounds-ui.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
