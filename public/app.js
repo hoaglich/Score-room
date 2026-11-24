@@ -148,7 +148,10 @@ function leaveRoom() {
 }
 
 /* ---------- Phòng đã tham gia gần đây (lưu trên máy này, cập nhật điểm từ máy chủ) ---------- */
-const loadRecent = () => lsJson('sr_recent', []);
+const loadRecent = () => {
+  const l = lsJson('sr_recent', []);
+  return Array.isArray(l) ? l.filter(r => r && typeof r === 'object' && r.code) : [];
+};
 const saveRecent = l => lsSet('sr_recent', JSON.stringify(l.slice(0, 10)));
 function rememberRoom(summary) {
   const list = loadRecent().filter(r => r.code !== room.code);
@@ -169,7 +172,16 @@ function onPeek(items) {
   saveRecent(list); renderRecent();
 }
 // summary = { total, items: [{ name, value }] }: điểm của bạn với từng người (hoặc bảng điểm) và tổng điểm của bạn
-function sumHtml(s) {
+// Dữ liệu lưu từ các bản cũ có dạng { mode, total, vs } hoặc { mode, total, standings }: chuyển về dạng mới
+function normSummary(s) {
+  if (!s || typeof s !== 'object') return null;
+  if (Array.isArray(s.items)) return s;
+  const items = Array.isArray(s.vs) ? s.vs
+    : Array.isArray(s.standings) ? s.standings.map(x => ({ name: x.name, value: x.total })) : [];
+  return { total: Number(s.total) || 0, items };
+}
+function sumHtml(s0) {
+  const s = normSummary(s0);
   if (!s) return '';
   const cls = v => (v > 0 ? 'pos' : v < 0 ? 'neg' : '');
   return (s.items.length ? s.items.map(v => `<span class="chip">${esc(v.name)} <b class="${cls(v.value)}">${signed(v.value)}</b></span>`).join('') : '<span class="muted">Chưa có người chơi khác</span>')
@@ -346,7 +358,9 @@ $('reconnLeave').onclick = leaveRoom;
 // Khởi động: có tên rồi thì vào trang chính (hoặc mở lại phòng đang dở), chưa có thì hỏi tên
 $('nameInput').value = myName;
 if (myName) {
-  $('hiName').textContent = myName; renderRecent();
+  $('hiName').textContent = myName;
   if (currentCode) showWait('Đang mở lại phòng…', 'Phòng ' + currentCode + ' (điểm được lưu trên máy chủ)'); else show('s-home');
+  try { renderRecent(); } catch (e) { console.error(e); }      // lỗi ở danh sách phòng gần đây không được làm trống cả trang
 } else { currentCode = null; show('s-name'); }
 connectWS();
+window.__appReady = true;

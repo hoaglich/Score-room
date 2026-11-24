@@ -7,6 +7,34 @@
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+
+<!-- Khung báo lỗi: nếu ứng dụng không chạy được, hiện nguyên nhân thay vì để trang trống -->
+<div id="fatal" class="card hidden" style="margin:16px;border-color:var(--bad)">
+  <b>Ứng dụng chưa chạy được</b>
+  <div class="muted" id="fatalMsg" style="margin:8px 0 12px;word-break:break-word"></div>
+  <div class="stack">
+    <button class="primary" onclick="location.reload()">Tải lại trang</button>
+    <button onclick="try{localStorage.removeItem('sr_recent');localStorage.removeItem('sr_cur');}catch(e){}location.reload()">Xoá danh sách phòng tạm trên máy này rồi tải lại</button>
+  </div>
+</div>
+<script>
+(function () {
+  function fail(msg) {
+    var f = document.getElementById('fatal'), m = document.getElementById('fatalMsg');
+    if (!f || !m) return;
+    if (!f.classList.contains('hidden')) m.textContent += ' | ' + msg; else m.textContent = msg;
+    f.classList.remove('hidden');
+  }
+  // Lỗi lệnh (true = bắt cả lỗi không tải được file)
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target !== window && (e.target.src || e.target.href)) fail('Không tải được file ' + (e.target.src || e.target.href) + ' (kiểm tra file này đã được đưa lên GitHub chưa)');
+    else fail((e.message || 'Lỗi không rõ') + (e.filename ? ' [' + e.filename.split('/').slice(-2).join('/') + ':' + e.lineno + ']' : ''));
+  }, true);
+  // Sau 5 giây mà ứng dụng chưa khởi động xong thì báo
+  setTimeout(function () { if (!window.__appReady) fail('Ứng dụng chưa khởi động sau 5 giây'); }, 5000);
+})();
+</script>
+
 <main>
 
   <!-- 1. Nhập tên -->
